@@ -1,0 +1,744 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <link rel="stylesheet" href="css/leaflet.css">
+        <link rel="stylesheet" href="css/L.Control.Layers.Tree.css">
+        <link rel="stylesheet" href="css/qgis2web.css">
+        <link rel="stylesheet" href="css/fontawesome-all.min.css">
+        <link rel="stylesheet" href="css/leaflet-search.css">
+        <link rel="stylesheet" href="css/filter.css">
+<link rel="stylesheet" href="css/nouislider.min.css">
+        <style>
+        html, body, #map {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+        }
+        </style>
+        <title>Mapa de delitos de alto impacto del año 2024</title>
+    </head>
+    <body>
+        <div id="map">
+        </div>
+        <script src="js/qgis2web_expressions.js"></script>
+        <script src="js/leaflet.js"></script>
+        <script src="js/L.Control.Layers.Tree.min.js"></script>
+        <script src="js/leaflet.rotatedMarker.js"></script>
+        <script src="js/leaflet.pattern.js"></script>
+        <script src="js/leaflet-hash.js"></script>
+        <script src="js/Autolinker.min.js"></script>
+        <script src="js/rbush.min.js"></script>
+        <script src="js/labelgun.min.js"></script>
+        <script src="js/labels.js"></script>
+        <script src="js/leaflet-search.js"></script>
+        <script src="js/tailDT.js"></script>
+<script src="js/nouislider.min.js"></script>
+<script src="js/wNumb.js"></script>
+        <script src="data/Bordeestatal_1.js"></script>
+        <script src="data/Divisin_municipal_2.js"></script>
+        <script src="data/ColoniasMich_20_3.js"></script>
+        <script src="data/carpetasMapas_4.js"></script>
+        <script>
+        var highlightLayer;
+        function highlightFeature(e) {
+            highlightLayer = e.target;
+
+            if (e.target.feature.geometry.type === 'LineString' || e.target.feature.geometry.type === 'MultiLineString') {
+              highlightLayer.setStyle({
+                color: '#ffff00',
+              });
+            } else {
+              highlightLayer.setStyle({
+                fillColor: '#ffff00',
+                fillOpacity: 1
+              });
+            }
+        }
+        var map = L.map('map', {
+            zoomControl:false, maxZoom:20, minZoom:1
+        }).fitBounds([[17.449443465566173,-104.40477966247352],[22.0724037171949,-99.25964769567588]]);
+        var hash = new L.Hash(map);
+        map.attributionControl.setPrefix('<a href="https://github.com/tomchadwin/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>');
+        var autolinker = new Autolinker({truncate: {length: 30, location: 'smart'}});
+        // remove popup's row if "visible-with-data"
+        function removeEmptyRowsFromPopupContent(content, feature) {
+         var tempDiv = document.createElement('div');
+         tempDiv.innerHTML = content;
+         var rows = tempDiv.querySelectorAll('tr');
+         for (var i = 0; i < rows.length; i++) {
+             var td = rows[i].querySelector('td.visible-with-data');
+             var key = td ? td.id : '';
+             if (td && td.classList.contains('visible-with-data') && feature.properties[key] == null) {
+                 rows[i].parentNode.removeChild(rows[i]);
+             }
+         }
+         return tempDiv.innerHTML;
+        }
+        // add class to format popup if it contains media
+		function addClassToPopupIfMedia(content, popup) {
+			var tempDiv = document.createElement('div');
+			tempDiv.innerHTML = content;
+			if (tempDiv.querySelector('td img')) {
+				popup._contentNode.classList.add('media');
+					// Delay to force the redraw
+					setTimeout(function() {
+						popup.update();
+					}, 10);
+			} else {
+				popup._contentNode.classList.remove('media');
+			}
+		}
+        var title = new L.Control({'position':'topright'});
+        title.onAdd = function (map) {
+            this._div = L.DomUtil.create('div', 'info');
+            this.update();
+            return this._div;
+        };
+        title.update = function () {
+            this._div.innerHTML = '<h2>Mapa de delitos de alto impacto del año 2024</h2>';
+        };
+        title.addTo(map);
+        var zoomControl = L.control.zoom({
+            position: 'topleft'
+        }).addTo(map);
+        var bounds_group = new L.featureGroup([]);
+        function setBounds() {
+        }
+        map.createPane('pane_OSMStandard_0');
+        map.getPane('pane_OSMStandard_0').style.zIndex = 400;
+        var layer_OSMStandard_0 = L.tileLayer('http://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            pane: 'pane_OSMStandard_0',
+            opacity: 1.0,
+            attribution: '<a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors, CC-BY-SA</a>',
+            minZoom: 1,
+            maxZoom: 20,
+            minNativeZoom: 0,
+            maxNativeZoom: 19
+        });
+        layer_OSMStandard_0;
+        map.addLayer(layer_OSMStandard_0);
+        function pop_Bordeestatal_1(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Shape_Leng'] !== null ? autolinker.link(feature.properties['Shape_Leng'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Shape_Area'] !== null ? autolinker.link(feature.properties['Shape_Area'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Bordeestatal_1_0() {
+            return {
+                pane: 'pane_Bordeestatal_1',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 9.0, 
+                fillOpacity: 0,
+                interactive: false,
+            }
+        }
+        map.createPane('pane_Bordeestatal_1');
+        map.getPane('pane_Bordeestatal_1').style.zIndex = 401;
+        map.getPane('pane_Bordeestatal_1').style['mix-blend-mode'] = 'normal';
+        var layer_Bordeestatal_1 = new L.geoJson(json_Bordeestatal_1, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_Bordeestatal_1',
+            layerName: 'layer_Bordeestatal_1',
+            pane: 'pane_Bordeestatal_1',
+            onEachFeature: pop_Bordeestatal_1,
+            style: style_Bordeestatal_1_0,
+        });
+        bounds_group.addLayer(layer_Bordeestatal_1);
+        map.addLayer(layer_Bordeestatal_1);
+        function pop_Divisin_municipal_2(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Shape_Leng'] !== null ? autolinker.link(feature.properties['Shape_Leng'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Shape_Area'] !== null ? autolinker.link(feature.properties['Shape_Area'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['CVE_ENT'] !== null ? autolinker.link(feature.properties['CVE_ENT'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['CVE_MUN'] !== null ? autolinker.link(feature.properties['CVE_MUN'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Municipio'] !== null ? autolinker.link(feature.properties['Municipio'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['concat'] !== null ? autolinker.link(feature.properties['concat'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['layer'] !== null ? autolinker.link(feature.properties['layer'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['path'] !== null ? autolinker.link(feature.properties['path'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Divisin_municipal_2_0() {
+            return {
+                pane: 'pane_Divisin_municipal_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fillOpacity: 0,
+                interactive: false,
+            }
+        }
+        map.createPane('pane_Divisin_municipal_2');
+        map.getPane('pane_Divisin_municipal_2').style.zIndex = 402;
+        map.getPane('pane_Divisin_municipal_2').style['mix-blend-mode'] = 'normal';
+        var layer_Divisin_municipal_2 = new L.geoJson(json_Divisin_municipal_2, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_Divisin_municipal_2',
+            layerName: 'layer_Divisin_municipal_2',
+            pane: 'pane_Divisin_municipal_2',
+            onEachFeature: pop_Divisin_municipal_2,
+            style: style_Divisin_municipal_2_0,
+        });
+        bounds_group.addLayer(layer_Divisin_municipal_2);
+        map.addLayer(layer_Divisin_municipal_2);
+        function pop_ColoniasMich_20_3(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['fid'] !== null ? autolinker.link(feature.properties['fid'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['ID'] !== null ? autolinker.link(feature.properties['ID'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['ENTIDAD'] !== null ? autolinker.link(feature.properties['ENTIDAD'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['MUNICIPIO'] !== null ? autolinker.link(feature.properties['MUNICIPIO'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NOMBRE'] !== null ? autolinker.link(feature.properties['NOMBRE'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['CLASIFICAC'] !== null ? autolinker.link(feature.properties['CLASIFICAC'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['CP'] !== null ? autolinker.link(feature.properties['CP'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['OTROS_CP'] !== null ? autolinker.link(feature.properties['OTROS_CP'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['CONTROL'] !== null ? autolinker.link(feature.properties['CONTROL'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Geometry1_'] !== null ? autolinker.link(feature.properties['Geometry1_'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Geometry2_'] !== null ? autolinker.link(feature.properties['Geometry2_'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['layer'] !== null ? autolinker.link(feature.properties['layer'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['path'] !== null ? autolinker.link(feature.properties['path'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_ColoniasMich_20_3_0() {
+            return {
+                pane: 'pane_ColoniasMich_20_3',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(125,139,143,0.1568627450980392)',
+                interactive: false,
+            }
+        }
+        map.createPane('pane_ColoniasMich_20_3');
+        map.getPane('pane_ColoniasMich_20_3').style.zIndex = 403;
+        map.getPane('pane_ColoniasMich_20_3').style['mix-blend-mode'] = 'normal';
+        var layer_ColoniasMich_20_3 = new L.geoJson(json_ColoniasMich_20_3, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_ColoniasMich_20_3',
+            layerName: 'layer_ColoniasMich_20_3',
+            pane: 'pane_ColoniasMich_20_3',
+            onEachFeature: pop_ColoniasMich_20_3,
+            style: style_ColoniasMich_20_3_0,
+        });
+        bounds_group.addLayer(layer_ColoniasMich_20_3);
+        map.addLayer(layer_ColoniasMich_20_3);
+        function pop_carpetasMapas_4(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">NUC</th>\
+                        <td class="visible-with-data" id="NUC">' + (feature.properties['NUC'] !== null ? autolinker.link(feature.properties['NUC'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">FechaInicio</th>\
+                        <td class="visible-with-data" id="FechaInicio">' + (feature.properties['FechaInicio'] !== null ? autolinker.link(feature.properties['FechaInicio'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Colonia</th>\
+                        <td class="visible-with-data" id="Colonia">' + (feature.properties['Colonia'] !== null ? autolinker.link(feature.properties['Colonia'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">DelitoAgrupado</th>\
+                        <td class="visible-with-data" id="DelitoAgrupado">' + (feature.properties['DelitoAgrupado'] !== null ? autolinker.link(feature.properties['DelitoAgrupado'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_carpetasMapas_4_0() {
+            return {
+                pane: 'pane_carpetasMapas_4',
+                radius: 2.8,
+                opacity: 1,
+                color: 'rgba(0,0,0,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,127,0,1.0)',
+                interactive: true,
+            }
+        }
+        map.createPane('pane_carpetasMapas_4');
+        map.getPane('pane_carpetasMapas_4').style.zIndex = 404;
+        map.getPane('pane_carpetasMapas_4').style['mix-blend-mode'] = 'normal';
+        var layer_carpetasMapas_4 = new L.geoJson(json_carpetasMapas_4, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_carpetasMapas_4',
+            layerName: 'layer_carpetasMapas_4',
+            pane: 'pane_carpetasMapas_4',
+            onEachFeature: pop_carpetasMapas_4,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_carpetasMapas_4_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_carpetasMapas_4);
+        map.addLayer(layer_carpetasMapas_4);
+        map.on("zoomend", function(){
+
+                if (map.hasLayer(layer_ColoniasMich_20_3)) {
+                    if (map.getZoom() <= 15 && map.getZoom() >= 19) {
+                        layer_ColoniasMich_20_3.eachLayer(function (layer) {
+                            layer.openTooltip();
+                        });
+                    } else {
+                        layer_ColoniasMich_20_3.eachLayer(function (layer) {
+                            layer.closeTooltip();
+                        });
+                    }
+                }
+        });
+        setBounds();
+                if (map.hasLayer(layer_ColoniasMich_20_3)) {
+                    if (map.getZoom() <= 15 && map.getZoom() >= 19) {
+                        layer_ColoniasMich_20_3.eachLayer(function (layer) {
+                            layer.openTooltip();
+                        });
+                    } else {
+                        layer_ColoniasMich_20_3.eachLayer(function (layer) {
+                            layer.closeTooltip();
+                        });
+                    }
+                }
+        map.addControl(new L.Control.Search({
+            layer: layer_Divisin_municipal_2,
+            initial: false,
+            hideMarkerOnCollapse: true,
+            propertyName: 'Municipio'}));
+        document.getElementsByClassName('search-button')[0].className +=
+         ' fa fa-binoculars';
+        var mapDiv = document.getElementById('map');
+        var row = document.createElement('div');
+        row.className="row";
+        row.id="all";
+        row.style.height = "100%";
+        var col1 = document.createElement('div');
+        col1.className="col9";
+        col1.id = "mapWindow";
+        col1.style.height = "99%";
+        col1.style.width = "80%";
+        col1.style.display = "inline-block";
+        var col2 = document.createElement('div');
+        col2.className="col3";
+        col2.id = "menu";
+        col2.style.display = "inline-block";
+        mapDiv.parentNode.insertBefore(row, mapDiv);
+        document.getElementById("all").appendChild(col1);
+        document.getElementById("all").appendChild(col2);
+        col1.appendChild(mapDiv)
+        var Filters = {"DelitoAgrupado": "str","Municipio": "str"};
+        function filterFunc() {
+          map.eachLayer(function(lyr){
+          if ("options" in lyr && "dataVar" in lyr["options"]){
+            features = this[lyr["options"]["dataVar"]].features.slice(0);
+            try{
+              for (key in Filters){
+                keyS = key.replace(/[^a-zA-Z0-9_]/g, "")
+                if (Filters[key] == "str" || Filters[key] == "bool"){
+                  var selection = [];
+                  var options = document.getElementById("sel_" + keyS).options
+                  for (var i=0; i < options.length; i++) {
+                    if (options[i].selected) selection.push(options[i].value);
+                  }
+                    try{
+                      if (key in features[0].properties){
+                        for (i = features.length - 1;
+                          i >= 0; --i){
+                          if (selection.indexOf(
+                          features[i].properties[key])<0
+                          && selection.length>0) {
+                          features.splice(i,1);
+                          }
+                        }
+                      }
+                    } catch(err){
+                  }
+                }
+                if (Filters[key] == "int"){
+                  sliderVals =  document.getElementById(
+                    "div_" + keyS).noUiSlider.get();
+                  try{
+                    if (key in features[0].properties){
+                    for (i = features.length - 1; i >= 0; --i){
+                      if (parseInt(features[i].properties[key])
+                          < sliderVals[0]
+                          || parseInt(features[i].properties[key])
+                          > sliderVals[1]){
+                            features.splice(i,1);
+                          }
+                        }
+                      }
+                    } catch(err){
+                    }
+                  }
+                if (Filters[key] == "real"){
+                  sliderVals =  document.getElementById(
+                    "div_" + keyS).noUiSlider.get();
+                  try{
+                    if (key in features[0].properties){
+                    for (i = features.length - 1; i >= 0; --i){
+                      if (features[i].properties[key]
+                          < sliderVals[0]
+                          || features[i].properties[key]
+                          > sliderVals[1]){
+                            features.splice(i,1);
+                          }
+                        }
+                      }
+                    } catch(err){
+                    }
+                  }
+                if (Filters[key] == "date"
+                  || Filters[key] == "datetime"
+                  || Filters[key] == "time"){
+                  try{
+                    if (key in features[0].properties){
+                      HTMLkey = key.replace(/[&\/\\#,+()$~%.'":*?<>{} ]/g, '');
+                      startdate = document.getElementById("dat_" +
+                        HTMLkey + "_date1").value.replace(" ", "T");
+                      enddate = document.getElementById("dat_" +
+                        HTMLkey + "_date2").value.replace(" ", "T");
+                      for (i = features.length - 1; i >= 0; --i){
+                        if (features[i].properties[key] < startdate
+                          || features[i].properties[key] > enddate){
+                          features.splice(i,1);
+                        }
+                      }
+                    }
+                  } catch(err){
+                  }
+                }
+              }
+            } catch(err){
+            }
+          this[lyr["options"]["layerName"]].clearLayers();
+          this[lyr["options"]["layerName"]].addData(features);
+          }
+          })
+        }
+            document.getElementById("menu").appendChild(
+                document.createElement("div"));
+            var div_DelitoAgrupado = document.createElement('div');
+            div_DelitoAgrupado.id = "div_DelitoAgrupado";
+            div_DelitoAgrupado.className= "filterselect";
+            document.getElementById("menu").appendChild(div_DelitoAgrupado);
+            sel_DelitoAgrupado = document.createElement('select');
+            sel_DelitoAgrupado.multiple = true;
+            sel_DelitoAgrupado.size = 8;
+            sel_DelitoAgrupado.id = "sel_DelitoAgrupado";
+            var DelitoAgrupado_options_str = "<option value='' unselected></option>";
+            sel_DelitoAgrupado.onchange = function(){filterFunc()};
+            DelitoAgrupado_options_str  += '<option value="Extorsión">Extorsión</option>';
+            DelitoAgrupado_options_str  += '<option value="Feminicidio">Feminicidio</option>';
+            DelitoAgrupado_options_str  += '<option value="Homicidio doloso">Homicidio doloso</option>';
+            DelitoAgrupado_options_str  += '<option value="Robo a casa habitación">Robo a casa habitación</option>';
+            DelitoAgrupado_options_str  += '<option value="Robo a comercios">Robo a comercios</option>';
+            DelitoAgrupado_options_str  += '<option value="Robo a transeúnte">Robo a transeúnte</option>';
+            DelitoAgrupado_options_str  += '<option value="Robo de vehículo">Robo de vehículo</option>';
+            DelitoAgrupado_options_str  += '<option value="Secuestro">Secuestro</option>';
+            sel_DelitoAgrupado.innerHTML = DelitoAgrupado_options_str;
+            div_DelitoAgrupado.appendChild(sel_DelitoAgrupado);
+            var lab_DelitoAgrupado = document.createElement('div');
+            lab_DelitoAgrupado.innerHTML = 'DelitoAgrupado';
+            lab_DelitoAgrupado.className = 'filterlabel';
+            div_DelitoAgrupado.appendChild(lab_DelitoAgrupado);
+            var reset_DelitoAgrupado = document.createElement('div');
+            reset_DelitoAgrupado.innerHTML = 'clear filter';
+            reset_DelitoAgrupado.className = 'filterlabel';
+            reset_DelitoAgrupado.onclick = function() {
+                var options = document.getElementById("sel_DelitoAgrupado").options;
+                for (var i=0; i < options.length; i++) {
+                    options[i].selected = false;
+                }
+                filterFunc();
+            };
+            div_DelitoAgrupado.appendChild(reset_DelitoAgrupado);
+            document.getElementById("menu").appendChild(
+                document.createElement("div"));
+            var div_Municipio = document.createElement('div');
+            div_Municipio.id = "div_Municipio";
+            div_Municipio.className= "filterselect";
+            document.getElementById("menu").appendChild(div_Municipio);
+            sel_Municipio = document.createElement('select');
+            sel_Municipio.multiple = true;
+            sel_Municipio.size = 10;
+            sel_Municipio.id = "sel_Municipio";
+            var Municipio_options_str = "<option value='' unselected></option>";
+            sel_Municipio.onchange = function(){filterFunc()};
+            Municipio_options_str  += '<option value="NULL">NULL</option>';
+            Municipio_options_str  += '<option value="Acuitzio">Acuitzio</option>';
+            Municipio_options_str  += '<option value="Aguililla">Aguililla</option>';
+            Municipio_options_str  += '<option value="Angamacutiro">Angamacutiro</option>';
+            Municipio_options_str  += '<option value="Angangueo">Angangueo</option>';
+            Municipio_options_str  += '<option value="Apatzingán">Apatzingán</option>';
+            Municipio_options_str  += '<option value="Aporo">Aporo</option>';
+            Municipio_options_str  += '<option value="Aquila">Aquila</option>';
+            Municipio_options_str  += '<option value="Ario">Ario</option>';
+            Municipio_options_str  += '<option value="Arteaga">Arteaga</option>';
+            Municipio_options_str  += '<option value="Briseñas">Briseñas</option>';
+            Municipio_options_str  += '<option value="Buenavista">Buenavista</option>';
+            Municipio_options_str  += '<option value="Carácuaro">Carácuaro</option>';
+            Municipio_options_str  += '<option value="Charapan">Charapan</option>';
+            Municipio_options_str  += '<option value="Charo">Charo</option>';
+            Municipio_options_str  += '<option value="Chavinda">Chavinda</option>';
+            Municipio_options_str  += '<option value="Cherán">Cherán</option>';
+            Municipio_options_str  += '<option value="Chilchota">Chilchota</option>';
+            Municipio_options_str  += '<option value="Chinicuila">Chinicuila</option>';
+            Municipio_options_str  += '<option value="Chucándiro">Chucándiro</option>';
+            Municipio_options_str  += '<option value="Churintzio">Churintzio</option>';
+            Municipio_options_str  += '<option value="Churumuco">Churumuco</option>';
+            Municipio_options_str  += '<option value="Coahuayana">Coahuayana</option>';
+            Municipio_options_str  += '<option value="Coalcomán de Vázquez Pallares">Coalcomán de Vázquez Pallares</option>';
+            Municipio_options_str  += '<option value="Coeneo">Coeneo</option>';
+            Municipio_options_str  += '<option value="Cojumatlán de Régules">Cojumatlán de Régules</option>';
+            Municipio_options_str  += '<option value="Contepec">Contepec</option>';
+            Municipio_options_str  += '<option value="Copándaro">Copándaro</option>';
+            Municipio_options_str  += '<option value="Cotija">Cotija</option>';
+            Municipio_options_str  += '<option value="Cuitzeo">Cuitzeo</option>';
+            Municipio_options_str  += '<option value="Ecuandureo">Ecuandureo</option>';
+            Municipio_options_str  += '<option value="Epitacio Huerta">Epitacio Huerta</option>';
+            Municipio_options_str  += '<option value="Erongarícuaro">Erongarícuaro</option>';
+            Municipio_options_str  += '<option value="Gabriel Zamora">Gabriel Zamora</option>';
+            Municipio_options_str  += '<option value="Hidalgo">Hidalgo</option>';
+            Municipio_options_str  += '<option value="Huandacareo">Huandacareo</option>';
+            Municipio_options_str  += '<option value="Huaniqueo">Huaniqueo</option>';
+            Municipio_options_str  += '<option value="Huetamo">Huetamo</option>';
+            Municipio_options_str  += '<option value="Huiramba">Huiramba</option>';
+            Municipio_options_str  += '<option value="Indaparapeo">Indaparapeo</option>';
+            Municipio_options_str  += '<option value="Irimbo">Irimbo</option>';
+            Municipio_options_str  += '<option value="Ixtlán">Ixtlán</option>';
+            Municipio_options_str  += '<option value="Jacona">Jacona</option>';
+            Municipio_options_str  += '<option value="Jiménez">Jiménez</option>';
+            Municipio_options_str  += '<option value="Jiquilpan">Jiquilpan</option>';
+            Municipio_options_str  += '<option value="José Sixto Verduzco">José Sixto Verduzco</option>';
+            Municipio_options_str  += '<option value="Jungapeo">Jungapeo</option>';
+            Municipio_options_str  += '<option value="Juárez">Juárez</option>';
+            Municipio_options_str  += '<option value="La Huacana">La Huacana</option>';
+            Municipio_options_str  += '<option value="La Piedad">La Piedad</option>';
+            Municipio_options_str  += '<option value="Lagunillas">Lagunillas</option>';
+            Municipio_options_str  += '<option value="Los Reyes">Los Reyes</option>';
+            Municipio_options_str  += '<option value="Lázaro Cárdenas">Lázaro Cárdenas</option>';
+            Municipio_options_str  += '<option value="Madero">Madero</option>';
+            Municipio_options_str  += '<option value="Maravatío">Maravatío</option>';
+            Municipio_options_str  += '<option value="Marcos Castellanos">Marcos Castellanos</option>';
+            Municipio_options_str  += '<option value="Morelia">Morelia</option>';
+            Municipio_options_str  += '<option value="Morelos">Morelos</option>';
+            Municipio_options_str  += '<option value="Múgica">Múgica</option>';
+            Municipio_options_str  += '<option value="Nahuatzen">Nahuatzen</option>';
+            Municipio_options_str  += '<option value="Nocupétaro">Nocupétaro</option>';
+            Municipio_options_str  += '<option value="Nuevo Parangaricutiro">Nuevo Parangaricutiro</option>';
+            Municipio_options_str  += '<option value="Nuevo Urecho">Nuevo Urecho</option>';
+            Municipio_options_str  += '<option value="Numarán">Numarán</option>';
+            Municipio_options_str  += '<option value="Ocampo">Ocampo</option>';
+            Municipio_options_str  += '<option value="Pajacuarán">Pajacuarán</option>';
+            Municipio_options_str  += '<option value="Panindícuaro">Panindícuaro</option>';
+            Municipio_options_str  += '<option value="Paracho">Paracho</option>';
+            Municipio_options_str  += '<option value="Parácuaro">Parácuaro</option>';
+            Municipio_options_str  += '<option value="Penjamillo">Penjamillo</option>';
+            Municipio_options_str  += '<option value="Peribán">Peribán</option>';
+            Municipio_options_str  += '<option value="Puruándiro">Puruándiro</option>';
+            Municipio_options_str  += '<option value="Purépero">Purépero</option>';
+            Municipio_options_str  += '<option value="Pátzcuaro">Pátzcuaro</option>';
+            Municipio_options_str  += '<option value="Queréndaro">Queréndaro</option>';
+            Municipio_options_str  += '<option value="Quiroga">Quiroga</option>';
+            Municipio_options_str  += '<option value="Sahuayo">Sahuayo</option>';
+            Municipio_options_str  += '<option value="Salvador Escalante">Salvador Escalante</option>';
+            Municipio_options_str  += '<option value="San Lucas">San Lucas</option>';
+            Municipio_options_str  += '<option value="Santa Ana Maya">Santa Ana Maya</option>';
+            Municipio_options_str  += '<option value="Senguio">Senguio</option>';
+            Municipio_options_str  += '<option value="Susupuato">Susupuato</option>';
+            Municipio_options_str  += '<option value="Tacámbaro">Tacámbaro</option>';
+            Municipio_options_str  += '<option value="Tancítaro">Tancítaro</option>';
+            Municipio_options_str  += '<option value="Tangamandapio">Tangamandapio</option>';
+            Municipio_options_str  += '<option value="Tangancícuaro">Tangancícuaro</option>';
+            Municipio_options_str  += '<option value="Tanhuato">Tanhuato</option>';
+            Municipio_options_str  += '<option value="Taretan">Taretan</option>';
+            Municipio_options_str  += '<option value="Tarímbaro">Tarímbaro</option>';
+            Municipio_options_str  += '<option value="Tepalcatepec">Tepalcatepec</option>';
+            Municipio_options_str  += '<option value="Tingambato">Tingambato</option>';
+            Municipio_options_str  += '<option value="Tingüindín">Tingüindín</option>';
+            Municipio_options_str  += '<option value="Tiquicheo de Nicolás Romero">Tiquicheo de Nicolás Romero</option>';
+            Municipio_options_str  += '<option value="Tlalpujahua">Tlalpujahua</option>';
+            Municipio_options_str  += '<option value="Tlazazalca">Tlazazalca</option>';
+            Municipio_options_str  += '<option value="Tocumbo">Tocumbo</option>';
+            Municipio_options_str  += '<option value="Tumbiscatío">Tumbiscatío</option>';
+            Municipio_options_str  += '<option value="Turicato">Turicato</option>';
+            Municipio_options_str  += '<option value="Tuxpan">Tuxpan</option>';
+            Municipio_options_str  += '<option value="Tuzantla">Tuzantla</option>';
+            Municipio_options_str  += '<option value="Tzintzuntzan">Tzintzuntzan</option>';
+            Municipio_options_str  += '<option value="Tzitzio">Tzitzio</option>';
+            Municipio_options_str  += '<option value="Uruapan">Uruapan</option>';
+            Municipio_options_str  += '<option value="Venustiano Carranza">Venustiano Carranza</option>';
+            Municipio_options_str  += '<option value="Villamar">Villamar</option>';
+            Municipio_options_str  += '<option value="Vista Hermosa">Vista Hermosa</option>';
+            Municipio_options_str  += '<option value="Yurécuaro">Yurécuaro</option>';
+            Municipio_options_str  += '<option value="Zacapu">Zacapu</option>';
+            Municipio_options_str  += '<option value="Zamora">Zamora</option>';
+            Municipio_options_str  += '<option value="Zinapécuaro">Zinapécuaro</option>';
+            Municipio_options_str  += '<option value="Zináparo">Zináparo</option>';
+            Municipio_options_str  += '<option value="Ziracuaretiro">Ziracuaretiro</option>';
+            Municipio_options_str  += '<option value="Zitácuaro">Zitácuaro</option>';
+            Municipio_options_str  += '<option value="Álvaro Obregón">Álvaro Obregón</option>';
+            sel_Municipio.innerHTML = Municipio_options_str;
+            div_Municipio.appendChild(sel_Municipio);
+            var lab_Municipio = document.createElement('div');
+            lab_Municipio.innerHTML = 'Municipio';
+            lab_Municipio.className = 'filterlabel';
+            div_Municipio.appendChild(lab_Municipio);
+            var reset_Municipio = document.createElement('div');
+            reset_Municipio.innerHTML = 'clear filter';
+            reset_Municipio.className = 'filterlabel';
+            reset_Municipio.onclick = function() {
+                var options = document.getElementById("sel_Municipio").options;
+                for (var i=0; i < options.length; i++) {
+                    options[i].selected = false;
+                }
+                filterFunc();
+            };
+            div_Municipio.appendChild(reset_Municipio);
+        resetLabels([layer_Divisin_municipal_2,layer_ColoniasMich_20_3,layer_carpetasMapas_4]);
+        map.on("zoomend", function(){
+            resetLabels([layer_Divisin_municipal_2,layer_ColoniasMich_20_3,layer_carpetasMapas_4]);
+        });
+        map.on("layeradd", function(){
+            resetLabels([layer_Divisin_municipal_2,layer_ColoniasMich_20_3,layer_carpetasMapas_4]);
+        });
+        map.on("layerremove", function(){
+            resetLabels([layer_Divisin_municipal_2,layer_ColoniasMich_20_3,layer_carpetasMapas_4]);
+        });
+        </script>
+    </body>
+</html>
